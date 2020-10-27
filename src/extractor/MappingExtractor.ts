@@ -1,5 +1,5 @@
 import { fhirdefs, fhirtypes, fshtypes, utils } from 'fsh-sushi';
-import { isEqual, pullAt } from 'lodash';
+import { cloneDeep, isEqual, pullAt } from 'lodash';
 import { ExportableMapping, ExportableMappingRule } from '../exportable';
 import {
   ProcessableElementDefinition,
@@ -39,13 +39,12 @@ export class MappingExtractor {
 
     const parentMappings = this.extractMappings(parent, parentSDElements);
 
-    // Filter out any mappings that come directly from the parent SD.
     // Only return mappings that are new to the profile or inherited mappings that include new MappingRules
-    const newMappings = mappings.filter(mapping => {
+    const changedMappings = cloneDeep(mappings).map(mapping => {
       const changedIndexes: number[] = [];
       const parentMapping = parentMappings.find(pm => pm.name === mapping.name);
       // If the mapping does not match any from the parent SD, it is new to the profile.
-      if (parentMapping == null) return true;
+      if (parentMapping == null) return mapping;
 
       // Check if each mapping rule is new to the profile
       mapping.rules.forEach((rule, i) => {
@@ -56,9 +55,17 @@ export class MappingExtractor {
         }
       });
       pullAt(mapping.rules, changedIndexes);
-      return mapping.rules.length > 0;
+
+      if (mapping.rules.length > 0) {
+        // If there are still rules on the inherited mapping, they are new to the profile.
+        return mapping;
+      } else {
+        // If the mapping came from the parent and there are no new rules, we do not need to export this mapping.
+        return undefined;
+      }
     });
-    return newMappings;
+    // Filter out the undefined values from unchanged mappings
+    return changedMappings.filter(e => e);
   }
 
   static extractMappings(
