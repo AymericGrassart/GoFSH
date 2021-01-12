@@ -73,6 +73,7 @@ export class FHIRProcessor {
       this.lake.getAllImplementationGuides().find(doc => doc.path === this.igPath) ??
       this.lake.getAllImplementationGuides()[0];
     resources.add(config);
+    logger.info('Processing StructureDefinitions...');
     this.lake.getAllStructureDefinitions().forEach(wild => {
       try {
         StructureDefinitionProcessor.process(
@@ -86,6 +87,7 @@ export class FHIRProcessor {
         logger.error(`Could not process StructureDefinition at ${wild.path}: ${ex.message}`);
       }
     });
+    logger.info('Processing CodeSystems...');
     this.lake.getAllCodeSystems(false).forEach(wild => {
       try {
         resources.add(CodeSystemProcessor.process(wild.content, this.fisher));
@@ -93,6 +95,7 @@ export class FHIRProcessor {
         logger.error(`Could not process CodeSystem at ${wild.path}: ${ex.message}`);
       }
     });
+    logger.info('Processing ValueSets...');
     this.lake.getAllValueSets(false).forEach(wild => {
       try {
         resources.add(ValueSetProcessor.process(wild.content, this.fisher));
@@ -100,6 +103,7 @@ export class FHIRProcessor {
         logger.error(`Could not process ValueSet at ${wild.path}: ${ex.message}`);
       }
     });
+    logger.info('Processing Instances...');
     this.lake.getAllInstances(true).forEach(wild => {
       try {
         resources.add(InstanceProcessor.process(wild.content, igForConfig?.content, this.fisher));
